@@ -20,14 +20,11 @@ fn get_calibration_data_v2(line: &str) -> Result<u64, std::io::Error> {
     let mut first= re.find(line).unwrap().as_str().to_string();
     let mut second = String::new();
 
-    let mut idx = line.len()-1;
-    while idx > 0 {
+    for idx in (0..line.len()).rev() {
         if let Some(mat) = re.find_at(line, idx) {
             second = mat.as_str().to_string();
             break;
         }
-        idx -= 1;
-        continue;
     }
 
     first = map_number_to_digit(&first);
@@ -152,6 +149,15 @@ mod test {
         let result = get_calibration_data_v2(&input);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 76);
+
+    }
+
+    #[test]
+    fn test_single_digit_in_string() {
+        let input = "7zthlrqqs".to_string();
+        let result = get_calibration_data_v2(&input);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 77);
     }
 
     #[test]
