@@ -1,5 +1,5 @@
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 struct Set {
     red: u32,
     green: u32,
@@ -54,6 +54,26 @@ impl Game {
             self.sets.push(set)
         });
     }
+
+    fn min_set(&self) -> Set {
+        let mut min_cubes = Set {
+            red: 0,
+            green: 0,
+            blue: 0,
+        };
+        for set in &self.sets {
+            if set.red > min_cubes.red {
+                min_cubes.red = set.red;
+            }
+            if set.green > min_cubes.green {
+                min_cubes.green = set.green;
+            }
+            if set.blue > min_cubes.blue {
+                min_cubes.blue = set.blue;
+            }
+        }
+        min_cubes.clone()
+    }
 }
 
 pub(crate) fn day_two_part_one(input: &str) -> Result<u32, std::io::Error> {
@@ -96,7 +116,31 @@ pub(crate) fn day_two_part_one(input: &str) -> Result<u32, std::io::Error> {
 
     Ok(id_sum)
 }
+pub(crate) fn day_two_part_two(input: &str) -> Result<u32, std::io::Error> {
 
+    let mut games: Vec<Game> = Vec::new();
+
+    for line in input.lines() {
+        let mut game = Game::new();
+        line.split(":").for_each(|s| {
+            if let Some(game_id) =  s.strip_prefix("Game ") {
+                game.set_id(game_id.parse::<u32>().unwrap());
+            } else {
+                game.add_set(s);
+            }
+        });
+        games.push(game);
+    }
+
+
+    let mut power_sum = 0;
+    for game in &games {
+        let min_set = game.min_set();
+        power_sum += min_set.red * min_set.green * min_set.blue;
+    }
+
+    Ok(power_sum)
+}
 
 mod test {
     use super::*;
@@ -107,6 +151,14 @@ mod test {
         let result = day_two_part_one(&input);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 8);
+    }
+
+    #[test]
+    fn test_day_two_part_two() {
+        let input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green\nGame 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue\nGame 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red\nGame 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red\nGame 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green".to_string();
+        let result = day_two_part_two(&input);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 2286);
     }
 }
 
