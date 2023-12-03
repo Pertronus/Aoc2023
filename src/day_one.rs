@@ -25,10 +25,9 @@ fn get_calibration_data_v2(line: &str) -> Result<u64, std::io::Error> {
         if let Some(mat) = re.find_at(line, idx) {
             second = mat.as_str().to_string();
             break;
-        } else {
-            idx -= 1;
-            continue;
         }
+        idx -= 1;
+        continue;
     }
 
     first = map_number_to_digit(&first);
