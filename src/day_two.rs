@@ -141,7 +141,7 @@ pub(crate) fn day_two_part_two(input: &str) -> Result<u32, std::io::Error> {
 
     Ok(power_sum)
 }
-
+#[cfg(test)]
 mod test {
     use super::*;
 
