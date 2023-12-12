@@ -30,6 +30,7 @@ fn main() {
     let input = load_file("day_four_input")
         .unwrap_or_else(|_| panic!("Could not load file"));
     println!("day four part one: {}", day_four::day_four_part_one(&input));
+    println!("day four part two: {}", day_four::day_four_part_two(&input));
 }
 
 #[cfg(test)]
