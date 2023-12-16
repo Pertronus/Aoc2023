@@ -2,6 +2,7 @@ mod day_one;
 mod day_two;
 mod day_three;
 mod day_four;
+mod day_five;
 
 use day_one::{ day_one_part_one, day_one_part_two };
 use day_two::{ day_two_part_one, day_two_part_two };
@@ -31,6 +32,10 @@ fn main() {
         .unwrap_or_else(|_| panic!("Could not load file"));
     println!("day four part one: {}", day_four::day_four_part_one(&input));
     println!("day four part two: {}", day_four::day_four_part_two(&input));
+
+    let input = load_file("day_five_input")
+        .unwrap_or_else(|_| panic!("Could not load file"));
+    println!("day five part one: {}", day_five::day_five_part_one(&input));
 }
 
 #[cfg(test)]
