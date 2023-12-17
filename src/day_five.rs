@@ -1,3 +1,6 @@
+use std::thread;
+use std::sync::{Arc, Mutex};
+
 
 #[derive(PartialEq, Debug)]
 struct Map {
@@ -72,7 +75,7 @@ impl SeedLocation {
 
     fn map_src_to_dest(&self, input: u64, map: &Vec<Map>) -> u64 {
         for m in map {
-            if input >= m.source && input <= m.source + m.range {
+            if input >= m.source && input < m.source + m.range {
                 return m.dest + input - m.source;
             }
         }
@@ -89,21 +92,60 @@ impl SeedLocation {
         seed = self.map_src_to_dest(seed, &self.water_to_light);
         seed = self.map_src_to_dest(seed, &self.light_to_temperature);
         seed = self.map_src_to_dest(seed, &self.temperature_to_humidity);
-        seed = self.map_src_to_dest(seed, &self.humidity_to_location);
-
-        seed
-
+        self.map_src_to_dest(seed, &self.humidity_to_location)
     }
 
     fn get_min_location(&self) -> u64 {
         self.seeds.iter().map(|x| self.seed_to_location(*x)).min().unwrap()
     }
+
+}
+
+fn get_min_location_mt(seed_location: Arc<Mutex<SeedLocation>>) -> u64 {
+    let mut handles = Vec::new();
+
+    // Extract and clone the seed ranges before spawning threads
+    let seed_ranges: Vec<(u64, u64)> = {
+        let seed_location = seed_location.lock().unwrap();
+        seed_location.seeds.chunks(2)
+            .map(|chunk| (chunk[0], chunk[1]))
+            .collect()
+    };
+
+    for &(start, range) in &seed_ranges {
+        let seed_loc = Arc::clone(&seed_location);
+
+        let range_complete: Vec<u64> = (start..(start + range)).collect();
+        let range_chunks = range_complete.chunks(range_complete.len() / 10 + 1);
+
+        for chunk in range_chunks {
+            let chunk = chunk.to_vec(); // Clone the chunk
+            let seed_loc_clone = Arc::clone(&seed_loc);
+
+            let handle = thread::spawn(move || {
+                chunk.iter().filter_map(|&seed| {
+                    let location = seed_loc_clone.lock().unwrap().seed_to_location(seed);
+                    Some(location)
+                }).min()
+            });
+            handles.push(handle);
+        }
+    }
+
+    // Join the threads and find the global minimum
+    handles.into_iter().filter_map(|handle| handle.join().unwrap()).min().unwrap()
 }
 
 pub(crate) fn day_five_part_one(input: &str) -> u64 {
     let mut seed_location = SeedLocation::new();
     seed_location.parse_input(input);
     seed_location.get_min_location()
+}
+
+pub(crate) fn day_five_part_two(input: &str) -> u64 {
+    let seed_location = Arc::new(Mutex::new(SeedLocation::new())); // SeedLocation::new();
+    seed_location.lock().unwrap().parse_input(input);
+    get_min_location_mt(seed_location)
 }
 
 #[cfg(test)]
@@ -122,6 +164,50 @@ mod tests {
         assert_eq!(seed_location.map_src_to_dest(53, &map), 55);
         assert_eq!(seed_location.map_src_to_dest(10, &map), 10);
     }
+
+    #[test]
+    fn parse_min_location_2() {
+        let seed_location = Arc::new(Mutex::new(SeedLocation::new())); // SeedLocation::new();
+        let input = indoc! {"
+            seeds: 79 14 55 13
+
+            seed-to-soil map:
+            50 98 2
+            52 50 48
+
+            soil-to-fertilizer map:
+            0 15 37
+            37 52 2
+            39 0 15
+
+            fertilizer-to-water map:
+            49 53 8
+            0 11 42
+            42 0 7
+            57 7 4
+
+            water-to-light map:
+            88 18 7
+            18 25 70
+
+            light-to-temperature map:
+            45 77 23
+            81 45 19
+            68 64 13
+
+            temperature-to-humidity map:
+            0 69 1
+            1 0 69
+
+            humidity-to-location map:
+            60 56 37
+            56 93 4
+            "};
+
+        seed_location.lock().unwrap().parse_input(input);
+        assert_eq!(get_min_location_mt(seed_location), 46);
+    }
+
 
     #[test]
     fn parse_min_location() {
